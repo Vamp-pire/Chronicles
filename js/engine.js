@@ -140,11 +140,13 @@ function updateBag(){ $('bag').textContent=G.state.items.length?('모은 것 '+G
 G.resetItems=function(filter){ G.state.items=filter?G.state.items.filter(filter):[]; updateBag(); };
 
 /* ---------- 관전 (기보 자동 재생 + 해설) ----------
-   G.watch({frames, notes, autoNote, meId, startText, who(k,kind), check, mate, plainMs, noteMs, stops, onEnd}) */
+   G.watch({frames, notes, autoNote, meId, startText, who(k,kind), check, mate, plainMs, noteMs, stops, onEnd, ask, onGo})
+   ask(i, cont): 수 i를 두기 직전에 불림. true를 돌려주면 재생을 멈추고, 장이 준비되면 cont(앞에 붙일 html)로 그 수를 두고 기다림.
+   onGo(): 관전 칸을 옮길 때마다 불림 (ask가 띄운 표시 지우기 등). */
 let W=null;
 G.watch=function(o){
   stopWatch();
-  W=Object.assign({plainMs:1300,noteMs:3200,stops:new Set(),check:'장 군',mate:'외 통',endDelay:1600},o,{FR:0,playing:false,timer:null,endT:null,speed:1});
+  W=Object.assign({plainMs:1300,noteMs:3200,stops:new Set(),check:'장 군',mate:'외 통',endDelay:1600},o,{FR:0,playing:false,timer:null,endT:null,speed:1,asked:new Set()});
   B.clear(); drawW(0,false);
   $('choices').innerHTML='';
   $('extra').innerHTML=`<div class="controls">
@@ -166,22 +168,25 @@ function updW(){ const bar=$('cBar'); if(!bar||!W) return; const N=W.frames.leng
 function playW(){ if(W.FR>=W.frames.length-1) return; $('choices').innerHTML=''; W.playing=true; updW(); tickW(); }
 function pauseW(){ if(!W) return; W.playing=false; clearTimeout(W.timer); updW(); }
 function tickW(){ if(!W.playing) return; if(W.FR>=W.frames.length-1){ pauseW(); return; }
+  const nx=W.frames[W.FR+1].move;
+  if(W.ask && !W.asked.has(nx.i)){ W.asked.add(nx.i); const w=W;
+    if(W.ask(nx.i, pre=>{ if(W!==w) return; goW(W.FR+1,true,pre); if(W.FR<W.frames.length-1) waitW(); })){ pauseW(); return; } }
   goW(W.FR+1,true); const m=W.frames[W.FR].move;
   if(W.stops.has(m.i) && W.FR<W.frames.length-1){ pauseW(); waitW(); return; }
   W.timer=setTimeout(tickW,(W.notes[m.i]?W.noteMs:W.plainMs)/W.speed); }
 function waitW(){ const b=$('cPlay'); if(b){ b.textContent='계속 ▶'; b.classList.add('wait'); }
   G.setChoices([{label:'계속 보기',primary:true,go:()=>{ G.setChoices([]); playW(); }}]); }
-function goW(k,animate){
-  if(k<0||k>=W.frames.length) return; clearTimeout(W.endT); W.FR=k; drawW(k,animate&&!reduce); updW();
+function goW(k,animate,pre){
+  if(k<0||k>=W.frames.length) return; clearTimeout(W.endT); if(W.onGo) W.onGo(); W.FR=k; drawW(k,animate&&!reduce); updW();
   const m=W.frames[k].move;
   if(!m){ G.say(`<p>${W.startText}</p>`); if(W.who) $('who').textContent=W.who(0,'narr'); return; }
   const [kind,html]=W.notes[m.i]||W.autoNote(m);
   if(W.who) $('who').textContent=W.who(k,kind);
-  G.say(`<p class="${kind==='me'?'say':''}">${html}</p>`);
+  G.say((pre||'')+`<p class="${kind==='me'?'say':''}">${html}</p>`);
   if(animate&&m.check&&k<W.frames.length-1) later(()=>G.banner(W.check),350);
   if(k===W.frames.length-1){ pauseW(); const w=W; W.endT=setTimeout(()=>{ G.banner(w.mate,'win',true); w.endT=setTimeout(w.onEnd,w.endDelay); }, animate?500:0); }
 }
-function stopWatch(){ if(!W) return; clearTimeout(W.timer); clearTimeout(W.endT); W=null; }
+function stopWatch(){ if(!W) return; clearTimeout(W.timer); clearTimeout(W.endT); if(W.onGo) W.onGo(); W=null; }
 G.stopWatch=stopWatch;
 
 /* ---------- 장(카세트) 등록·갈아 끼우기 ---------- */
