@@ -1,11 +1,28 @@
 /* 제2장 · 비단길 위의 말 (페르시아·아랍, 샤트란지)
    기보·해설·퍼즐은 data.js, 꾸밈은 style.css, 그림은 img/ 에 있습니다. */
 (function(){
-const {$, scene, say, setChoices, possessFx, slipFx, img, IMG, banner, rules, board, gain, later} = G;
+const {$, say, setChoices, img, IMG, banner, rules, board, gain, later} = G;
 const {on, DG, legal, make, attacked, kingSq} = rules;
 const D='chapters/ch2/img/';
 const PICS={camel:D+'possess-camel.png', sage:D+'possess-sage.png', alfil:D+'possess-alfil.png'};
 let GAME, ME_ID, NOTES, PUZ;   // data.js 에서 채움
+
+/* ---- 그림 속 누를 곳(핫스팟) ----
+   장면마다 hots:[{art, x, y, rx, ry, label, go}] 를 주면 그림 위에 빛나는 타원이 생기고, 누르면 go 가 실행됩니다.
+   좌표는 그림(1280×720) 기준. 단추로도 같은 곳에 갈 수 있게 choices 도 함께 둡니다. */
+function hots(list){
+  document.querySelectorAll('.hot').forEach(h=>h.remove());
+  list.forEach(h=>{ const svg=$('art-'+h.art); if(!svg) return; const g=document.createElementNS(G.NS,'g');
+    g.setAttribute('class','hot'+(h.label?'':' nolabel')); g.setAttribute('tabindex','0'); g.setAttribute('role','button'); g.setAttribute('aria-label',h.label||h.aria||'');
+    const fs=Math.max(22,Math.round(13*1280/((G.stage.clientWidth)||1280))), w=(h.label||'').length*fs+fs*1.3, hh=fs*1.7, ty=Math.max(h.y-h.ry-fs*.8, hh+6);
+    g.innerHTML=`<ellipse class="hz" cx="${h.x}" cy="${h.y}" rx="${h.rx}" ry="${h.ry}"/><rect class="tagbg" x="${h.x-w/2}" y="${ty-fs*1.18}" width="${w}" height="${hh}" rx="${hh/2}"/><text class="tagtx" x="${h.x}" y="${ty}" text-anchor="middle" style="font-size:${fs}px">${h.label||''}</text>`;
+    const fire=e=>{ e.stopPropagation(); hots([]); h.go(); };
+    g.addEventListener('click',fire); g.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fire(e); } });
+    svg.appendChild(g); });
+}
+function scene(o){ hots(o.hots||[]); G.scene(o); }
+function possessFx(pic,then,opt){ hots([]); G.possessFx(pic,then,opt); }
+function slipFx(year,then){ hots([]); G.slipFx(year,then); }
 
 const ARTS=`
   <svg class="art" id="art-caravan" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -27,8 +44,7 @@ const ARTS=`
   </svg>
   <svg class="art" id="art-changan" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="kb"><image href="${D}changan.jpg" width="1280" height="720"/></g>
-    <circle class="lampglow" cx="1162" cy="490" r="44" fill="url(#glowG)"/><circle class="lampglow" cx="150" cy="570" r="40" fill="url(#glowG)"/>
-    <circle class="lampglow" cx="64" cy="200" r="34" fill="url(#glowG)"/><circle class="lampglow" cx="1180" cy="230" r="34" fill="url(#glowG)"/>
+    <circle class="lampglow" cx="1100" cy="455" r="44" fill="url(#glowG)"/><circle class="lampglow" cx="210" cy="540" r="40" fill="url(#glowG)"/>
   </svg>
   <svg class="art" id="art-ctesiphon" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="kb"><image href="${D}ctesiphon.jpg" width="1280" height="720"/></g>
@@ -55,7 +71,7 @@ function autoNote(m){ const who=m.p[0]==='w'?'알술리':'알마와르디'; cons
   if(m.check) t+=' <b>샤!</b>';
   return ['narr',t]; }
 let FRAMES=null, ME_DIES=-1;
-const S={visited:{},bet:null,quizMiss:0,q:0};
+const S={visited:{},bet:null,quizMiss:0,q:0,pred:0};
 
 /* ---- 지도 ---- */
 const NS=G.NS;
@@ -84,7 +100,7 @@ function buildMap(){
 function placeMarker(x,y){ $('marker').setAttribute('transform',`translate(${x} ${y})`); }
 function resetRoutes(){ for(const k in routeEls){ const p=routeEls[k]; const L=p.getTotalLength(); p.style.setProperty('--len',L); p.classList.remove('draw'); p.classList.toggle('done',!!S.visited[k]); } }
 function travel(k,then){
-  setChoices([]);
+  setChoices([]); hots([]);
   const p=routeEls[k], L=p.getTotalLength(); p.classList.remove('done'); p.style.setProperty('--len',L); void p.getBoundingClientRect();
   p.classList.add('draw');
   const t0=performance.now(), dur=G.reduce?10:2400, chap=G.current;
@@ -97,7 +113,9 @@ function caravan(){
   scene({art:'caravan',who:'낙타',place:'비단길 · 6세기 무렵',html:`
     <p>모래바람이 걷히자 당신은 <b>네 발로</b> 서 있습니다. 등에는 짐이 무겁고, 목에서 방울이 딸랑거립니다. 이번에 깃든 몸은 낙타입니다.</p>
     <p>등에 진 짐 속에 비단으로 싼 판과 말 서른두 개가 있습니다. 인도 궁정에서 보았던 바로 그 놀이, 차투랑가입니다.</p>
-    <p class="say">"이 놀이를 어디에 먼저 팔아 볼까?" 소그드 상인 나나반다크가 당신의 목을 두드립니다. "길은 셋이다."</p>`,
+    <p class="say">"이 놀이를 어디에 먼저 팔아 볼까?" 소그드 상인 나나반다크가 당신의 목을 두드립니다. "길은 셋이다."</p>
+    <p class="note">그림 속 빛나는 곳을 눌러서 이야기를 진행할 수 있어요. 아래 단추를 눌러도 됩니다.</p>`,
+    hots:[{art:'caravan',x:700,y:440,rx:100,ry:90,label:'짐 속의 판',go:()=>mapHub(true)}],
     choices:[{label:'상인이 지도를 펼친다',primary:true,go:()=>mapHub(true)}]});
 }
 function mapHub(first){
@@ -106,12 +124,13 @@ function mapHub(first){
   const seen=Object.keys(S.visited).length;
   scene({who:'낙타',place:'인도 북부 · 갈림길',html: first?`
     <p>상인이 손가락으로 지도를 짚습니다. <b>서쪽</b>의 페르시아 왕도, <b>북쪽</b>의 사마르칸트, <b>동쪽</b>의 장안.</p>
-    <p class="note">크테시폰이 이야기의 본편입니다. 사마르칸트와 장안은 곁가지라서, 들렀다가 이 갈림길로 돌아올 수 있습니다.</p>`
+    <p class="note">크테시폰이 이야기의 본편입니다. 사마르칸트와 장안은 곁가지라서, 들렀다가 이 갈림길로 돌아올 수 있습니다. 지도 위 도시를 눌러도 됩니다.</p>`
     :`<p>다시 갈림길입니다. ${seen>=2?'두 곁가지를 모두 돌아봤습니다. 이제 서쪽으로 갈 때입니다.':'아직 가 보지 않은 길이 남아 있습니다.'}</p>`,
     choices:[
       {label:'서쪽, 페르시아 왕도 크테시폰으로',sub:'본편 · 이 놀이가 처음으로 시험받는 곳',primary:true,go:()=>travel('ctesiphon',ctesiphon)},
       {label:(S.visited.samarkand?'✓ ':'')+'북쪽, 사마르칸트로',sub:'곁가지 · 땅속에 잠든 상아 말',go:()=>travel('samarkand',samarkand)},
-      {label:(S.visited.changan?'✓ ':'')+'동쪽, 장안으로',sub:'곁가지 · 강이 흐르는 판',go:()=>travel('changan',changan)}]});
+      {label:(S.visited.changan?'✓ ':'')+'동쪽, 장안으로',sub:'곁가지 · 강이 흐르는 판',go:()=>travel('changan',changan)}],
+    hots:[['ctesiphon',ctesiphon],['samarkand',samarkand],['changan',changan]].map(([k,f])=>({art:'map',x:CITIES[k].xy[0],y:CITIES[k].xy[1],rx:46,ry:46,aria:CITIES[k].name+'로 가기',go:()=>travel(k,f)}))});
 }
 
 /* 곁가지: 사마르칸트 */
@@ -120,6 +139,7 @@ function samarkand(){
   scene({art:'samarkand',who:'낙타',place:'사마르칸트 · 7세기 무렵(추정)',html:`
     <p>소그드 상인들의 도시. 시장에서 나나반다크가 판을 펼치자 상아 조각가가 눈을 반짝입니다. 그는 말을 <b>진짜 코끼리, 진짜 기병</b> 모양으로 깎아 주겠다고 합니다.</p>
     <p>그때 발밑의 모래가 출렁입니다. 시간이 1,300년쯤 앞으로 미끄러집니다.</p>`,
+    hots:[{art:'samarkand',x:640,y:545,rx:200,ry:70,label:'출렁이는 모래',go:()=>slipFx('1977',dig)}],
     choices:[{label:'모래 속으로',primary:true,go:()=>slipFx('1977',dig)}]});
 }
 function dig(){
@@ -153,7 +173,12 @@ function changan(){
   S.visited.changan=true;
   scene({art:'changan',who:'낙타',place:'장안 · 7~8세기 무렵(추정)',html:`
     <p>당나라의 수도 장안. 시장 한쪽에서 두 노인이 판을 두고 있습니다. 그런데 이상합니다. 말이 칸 <b>안</b>이 아니라 선이 만나는 <b>점 위</b>에 놓여 있습니다.</p>
-    <p class="say">"서쪽 놀이라고? 우리 것도 비슷하지." 노인이 판의 세 곳을 가리킵니다. 눌러서 살펴보세요.</p>`, after:xqGame});
+    <p class="say">"서쪽 놀이라고? 우리 것도 비슷하지." 노인이 손짓합니다.</p>`,
+    hots:[{art:'changan',x:620,y:524,rx:160,ry:48,label:'노인들의 판',go:changanBoard}],
+    choices:[{label:'노인들의 판을 들여다본다',primary:true,go:changanBoard}]});
+}
+function changanBoard(){
+  scene({html:`<p class="say">노인이 판의 세 곳을 가리킵니다. "여기, 여기, 그리고 여기를 보게." 아래 단추를 눌러 살펴보세요.</p>`, after:xqGame});
 }
 function xqBoard(){ let s='<svg class="xq" viewBox="0 0 360 400" role="img" aria-label="샹치 판"><g stroke="#7a5a34" stroke-width="1.5">';
   for(let r=0;r<10;r++) s+=`<line x1="20" y1="${20+r*40}" x2="340" y2="${20+r*40}"/>`;
@@ -193,7 +218,9 @@ function ctesiphon(){
   scene({art:'ctesiphon',who:'낙타',place:'크테시폰 · 사산 왕조 페르시아, 6세기',html:`
     <p>거대한 아치 아래, 왕 중의 왕 <b>호스로 1세</b>(재위 531~579)가 앉아 있습니다. 인도에서 온 사신이 무릎을 꿇고 판을 바칩니다. 말 열여섯 개는 에메랄드, 열여섯 개는 루비입니다.</p>
     <p class="say">"이 놀이의 규칙을 알아내 보시오. 알아내지 못하면 페르시아는 인도에 조공을 바쳐야 하오."</p>
-    <p>신하들이 웅성거리는 사이, 젊은 재상 하나가 앞으로 나섭니다. 당신의 의식이 그에게로 끌려갑니다.</p>`,
+    <p>신하들이 웅성거리는 사이, 젊은 재상 하나가 앞으로 나섭니다. 당신의 의식이 그에게로 끌려갑니다.</p>
+    <p class="note">사신이 받쳐 든 판을 눌러 보세요.</p>`,
+    hots:[{art:'ctesiphon',x:660,y:515,rx:80,ry:38,label:'사신의 판',go:()=>possessFx(PICS.sage,riddle)}],
     choices:[{label:'재상의 몸으로',primary:true,go:()=>possessFx(PICS.sage,riddle)}]});
 }
 const QUIZ=[
@@ -261,7 +288,10 @@ function baghdad(){
   cityEls.ctesiphon.classList.remove('dim'); for(const k of ['samarkand','changan']) cityEls[k].classList.remove('dim');
   scene({art:'baghdad',who:'…',place:'바그다드 · 칼리프 알묵타피의 궁정, 902~908년 사이',html:`
     <p>칼리프 <b>알묵타피</b> 앞에 판이 놓였습니다. 한쪽은 궁정의 자랑, 오랫동안 총애를 받아 온 챔피언 <b>알마와르디</b>. 다른 쪽은 이름이 막 알려지기 시작한 젊은 학자 <b>알술리</b>입니다.</p>
-    <p class="say">"내 앞에서 누가 더 나은지 가려 보아라." 칼리프가 손짓합니다. 궁정 사람들이 저마다 한쪽에 돈을 겁니다.</p>`,
+    <p class="say">"내 앞에서 누가 더 나은지 가려 보아라." 칼리프가 손짓합니다. 궁정 사람들이 저마다 한쪽에 돈을 겁니다.</p>
+    <p class="note">돈을 걸 사람을 그림에서 눌러 보세요. 왼쪽이 알술리, 오른쪽이 알마와르디입니다.</p>`,
+    hots:[{art:'baghdad',x:340,y:440,rx:120,ry:190,label:'알술리',go:()=>bet('suli')},
+          {art:'baghdad',x:950,y:440,rx:120,ry:190,label:'알마와르디',go:()=>bet('mawardi')}],
     choices:[
       {label:'총애받는 챔피언 알마와르디에게 건다',go:()=>bet('mawardi')},
       {label:'젊은 도전자 알술리에게 건다',go:()=>bet('suli')}]});
@@ -270,6 +300,7 @@ function bet(k){
   S.bet=k;
   scene({html:`<p>${k==='suli'?'옆의 신하가 코웃음을 칩니다. "알술리? 젊은 혈기로는 안 되네."':'옆의 신하가 고개를 끄덕입니다. "현명하군. 알마와르디는 진 적이 거의 없지."'}</p>
     <p>판 위로 시선이 빨려 들어갑니다. 이번에 깃들 몸은 알술리의 오른쪽 <b>알필</b>, 코끼리입니다.</p>`,
+    hots:[{art:'baghdad',x:630,y:560,rx:170,ry:50,label:'판 위의 알필',go:toPiece}],
     choices:[{label:'알필에 빙의한다',primary:true,go:toPiece}]});
 }
 function toPiece(){
@@ -293,11 +324,51 @@ function watch(){
   board.cells().forEach(c=>c.classList.remove('reach'));
   board.soulPic=IMG.alf_welephant;
   // 알필 속마음(me) 해설 수와 사냥의 두 고비(20·42수)에서 멈춤
+  S.pred=0;
   const stops=new Set([...Object.keys(NOTES).filter(k=>NOTES[k][0]==='me').map(Number),20,42]);
   G.watch({frames:FRAMES, notes:NOTES, autoNote, meId:ME_ID,
     startText:'칼리프가 고개를 끄덕입니다. 알술리가 먼저 둡니다.',
     who:(k,kind)=> (ME_DIES>0&&k>=ME_DIES) ? '알필의 혼' : (kind==='me'?'알필(코끼리) · 속마음':'알필(코끼리)'),
-    check:'샤 !', mate:'샤 마트', plainMs:650, noteMs:1900, stops, endDelay:1700, onEnd:ending});
+    check:'샤 !', mate:'샤 마트', plainMs:650, noteMs:1900, stops, endDelay:1700, onEnd:ending,
+    ask:predict, onGo:clearPred});
+}
+
+/* ---- 다음 수 맞히기: 고비가 되는 네 수 직전에 멈추고 후보 셋 중 실제 수를 고르게 함 ---- */
+const PRED=[20,30,42,44];
+let PQ=null;
+const pos=s=>`translate(${(s&7)*100}%,${(7-(s>>3))*100}%)`;
+function frameBefore(i){ return FRAMES.find(F=>F.move&&F.move.i===i-1)||FRAMES[0]; }
+function candidates(b,i){
+  const real=GAME[i], c=b[real[0]][0], o=c==='w'?'b':'w';
+  const val={P:1,F:2,E:2,N:3,R:5,K:0};
+  const sc=m=>{ const nb=make(b,m); let s=0; if(attacked(nb,kingSq(nb,o),c)) s+=4; if(b[m[1]]) s+=2+val[b[m[1]][1]]; return s+((m[0]*7+m[1]*3)%5)/10; };
+  const alts=legal(b,c).filter(m=>m[1]!==real[1]).sort((x,y)=>sc(y)-sc(x));
+  const pick=[]; for(const m of alts){ if(pick.length>=2) break; if(pick.some(p=>p[1]===m[1])) continue; pick.push(m); }
+  return [real,...pick].sort((x,y)=>x[1]-y[1]);
+}
+function mvLabel(b,m){ const p=b[m[0]], nm=NAME[p[1]].split('(')[0]; return `${nm} ${G.SQ(m[0])}→${G.SQ(m[1])}${b[m[1]]?' (잡기)':''}`; }
+function predict(i,cont){
+  if(!PRED.includes(i)) return false;
+  banner('');
+  const b=frameBefore(i).b, real=GAME[i], c=b[real[0]][0], list=candidates(b,i), who=c==='w'?'알술리':'알마와르디';
+  PQ={list,real,cont,b};
+  list.forEach((m,n)=>{ board.cell(m[0]).classList.add('pfrom'); const tc=board.cell(m[1]); tc.classList.add('pto'); tc.dataset.n=n;
+    const d=document.createElement('div'); d.className='pbadge'; d.dataset.n=n; d.style.transform=pos(m[1]); d.innerHTML=`<span>${n+1}</span>`; $('pieces').appendChild(d); });
+  board.onCell=s=>{ const tc=board.cell(s); if(PQ&&tc.classList.contains('pto')) answer(+tc.dataset.n); };
+  const q = i===30 ? '알필인 당신의 몸이 근질거립니다. 알술리는 다음에 무엇을 둘까요?' : `${who}의 다음 수는 무엇일까요?`;
+  $('who').textContent = i===30 ? '알필(코끼리) · 속마음' : '다음 수 맞히기';
+  say(`<p><b>${q}</b></p><p class="note">판 위 번호 칸을 누르거나 아래에서 고르세요. 지금까지 ${S.pred}번 맞혔어요.</p>`);
+  setChoices(list.map((m,n)=>({label:`${n+1}. ${mvLabel(b,m)}`,go:()=>answer(n)})));
+  return true;
+}
+function clearPred(){ board.cells().forEach(c=>{ c.classList.remove('pfrom','pto'); delete c.dataset.n; }); $('pieces').querySelectorAll('.pbadge').forEach(d=>d.remove()); if(PQ){ PQ=null; board.onCell=null; } }
+function answer(n){
+  if(!PQ) return; const q=PQ; PQ=null; board.onCell=null;
+  const pick=q.list[n], ok=pick===q.real;
+  if(ok) S.pred++;
+  $('pieces').querySelectorAll('.pbadge').forEach(d=>d.classList.add(q.list[+d.dataset.n]===q.real?'ok':'no'));
+  setChoices([]);
+  later(()=>{ q.cont(ok?'<p class="say">맞혔습니다! ✓</p>':`<p class="say">아쉬워요. 실제로는 <b>${mvLabel(q.b,q.real)}</b>였습니다.</p>`); }, G.reduce?0:700);
 }
 function ending(){
   const right=S.bet==='suli';
@@ -305,6 +376,7 @@ function ending(){
     <p>궁정이 술렁입니다. 알마와르디가 판에서 눈을 떼지 못합니다.</p>
     <p class="say">칼리프 알묵타피가 알마와르디를 돌아보며 말합니다. "그대의 장미수가 그만 구정물이 되어 버렸구나."</p>
     <p>그날 이후 총애는 알술리에게 옮겨 갑니다. ${right?'당신이 건 판돈은 두 배가 되어 돌아왔습니다.':'당신이 건 판돈은 옆 신하의 주머니로 들어갔습니다.'}</p>
+    <p>다음 수 맞히기: <b>${PRED.length}번 중 ${S.pred}번</b> 맞혔어요. ${S.pred>=3?'알술리의 제자가 될 만한 눈이네요.':S.pred>=1?'칼리프 곁의 구경꾼 정도는 되겠어요.':'아직은 판을 보는 눈을 기르는 중이에요.'}</p>
     <p class="note">칼리프의 말은 후대 기록에 전하는 일화로, 원문은 이보다 더 거친 표현이라고 합니다.</p>`,
     choices:[{label:'다시 보기',go:()=>{ banner(''); watch(); }},{label:'다음으로',primary:true,go:shahmat}]});
 }
@@ -315,6 +387,7 @@ function shahmat(){
     <p><b>샤 마트.</b> 페르시아어 '샤'(왕)와 '마트'(꼼짝 못 하는)가 합쳐진 말입니다. 아랍을 거쳐 유럽으로 건너가며 '체크메이트'가 되었습니다.</p>
     <p>알술리는 이후 수많은 제자를 길렀고, '알술리처럼 둔다'는 말이 최고의 실력을 뜻하게 되었다고 합니다. 그가 남긴 문제 하나는 <b>천 년 넘게 아무도 풀지 못하다가 1986년에야 풀렸습니다</b>.</p>
     <p class="say">대국이 끝난 뒤, 알술리가 판을 정리하며 웃습니다. "이야기 하나 해 주지. 딜라람이라는 여인의 이야기야."</p>`,
+    hots:[{art:'shahmat',x:620,y:420,rx:110,ry:130,label:'쓰러진 왕',go:dilaram}],
     choices:[{label:'이야기를 듣는다',primary:true,go:dilaram}]});
 }
 

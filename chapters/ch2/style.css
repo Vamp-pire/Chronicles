@@ -76,3 +76,25 @@ body[data-ch="ch2"] .awake .fall{animation:ch2-fall 1.4s cubic-bezier(.5,0,.75,0
 .xq .hl{opacity:0;transition:opacity .4s}
 .xq .hl.on{opacity:1}
 @media (max-width:560px){.quiz{grid-template-columns:64px minmax(0,1fr)}.quiz .pic{width:64px;height:64px}.city text{font-size:46px}.city .tag{font-size:30px}}
+
+/* 그림 속 누를 곳(핫스팟) */
+body[data-ch="ch2"] .art{pointer-events:none}
+body[data-ch="ch2"] .art.show .hot{pointer-events:auto;cursor:pointer}
+body[data-ch="ch2"] .stage.match .hot{display:none}
+body[data-ch="ch2"] .hot .hz{fill:#fff3d0;fill-opacity:0;stroke:#ffe3a0;stroke-width:4;stroke-dasharray:14 10;transition:fill-opacity .2s;animation:ch2-hot 1.8s ease-in-out infinite}
+@keyframes ch2-hot{0%,100%{stroke-opacity:.35}50%{stroke-opacity:1}}
+body[data-ch="ch2"] .hot:hover .hz,body[data-ch="ch2"] .hot:focus .hz{fill-opacity:.16;stroke-opacity:1}
+body[data-ch="ch2"] .hot:focus{outline:none}
+body[data-ch="ch2"] .hot .tagbg{fill:#2a1730;opacity:.88}
+body[data-ch="ch2"] .hot .tagtx{font-family:var(--ui);font-weight:600;fill:#ffe3a0}
+body[data-ch="ch2"] .hot.nolabel .tagbg,body[data-ch="ch2"] .hot.nolabel .tagtx{display:none}
+
+/* 다음 수 맞히기 */
+body[data-ch="ch2"] .cell.pfrom{box-shadow:inset 0 0 0 3px var(--lac)}
+body[data-ch="ch2"] .cell.pto{background:#f6d48c!important;cursor:pointer}
+body[data-ch="ch2"] .cell.pto:hover{background:#f3c25e!important}
+body[data-ch="ch2"] .pbadge{position:absolute;width:12.5%;height:12.5%;pointer-events:none;z-index:6}
+body[data-ch="ch2"] .pbadge span{position:absolute;right:4%;top:4%;width:40%;height:40%;border-radius:50%;background:var(--lac);color:#fff;display:grid;place-items:center;font-weight:700;font-size:clamp(.65rem,2.4vw,1rem);box-shadow:0 0 0 2px var(--sand);animation:ch2-pb 1.2s ease-in-out infinite alternate}
+body[data-ch="ch2"] .pbadge.ok span{background:var(--turq)}
+body[data-ch="ch2"] .pbadge.no span{background:#8a8a8a}
+@keyframes ch2-pb{from{transform:scale(.9)}to{transform:scale(1.08)}}
