@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "chronicles-chess.vercel.app" }],
+      "destination": "https://chronicles-history.vercel.app/:path*",
+      "permanent": true
+    }
+  ]
+}
