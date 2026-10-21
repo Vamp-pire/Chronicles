@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>체스 빙의록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/engine.css">
+<!-- 장(카세트)마다 꾸밈 -->
+<link rel="stylesheet" href="chapters/ch1/style.css">
+<link rel="stylesheet" href="chapters/ch2/style.css">
+</head>
+<body>
+<div class="app">
+<header><h1>체스 빙의록</h1><span class="ch"></span><span class="bag" id="bag"></span>
+  <select id="chSelect" aria-label="장 선택"></select></header>
+
+<div class="stage" id="stage">
+  <!-- 장의 그림(.art)은 장을 불러올 때 여기에 끼워 넣습니다 -->
+  <div class="boardstage"><div class="boardbox"><div class="board" id="board"><div class="cells" id="cells"></div><div class="pieces" id="pieces"></div></div><div class="banner" id="banner"></div></div></div>
+  <div class="slip" id="slip"></div><div class="year" id="year"></div>
+  <div class="possess" id="possess"><div class="core"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div><img id="possessImg" alt=""><div class="word">빙 의</div></div>
+  <div class="titlecard" id="titlecard"><h2></h2><p></p></div>
+</div>
+
+<div class="dialog" aria-live="polite">
+  <div class="who"><span class="dot"></span><span>빙의 중</span><b id="who">…</b><span class="place" id="place"></span></div>
+  <div class="text" id="text" title="누르면 문장을 바로 다 보여줍니다"></div>
+  <div id="extra"></div>
+  <div class="choices" id="choices"></div>
+</div>
+
+<details><summary id="legendTitle">말과 규칙</summary><div class="legend" id="legend"></div>
+<p class="note" id="rulesNote" style="margin:10px 0 0"></p></details>
+<p class="credits" id="credits"></p>
+</div>
+
+<script src="js/engine.js"></script>
+<!-- 장 목록: 새 장은 여기 한 줄 추가 (순서 = 장 순서) -->
+<script src="chapters/ch1/chapter.js"></script>
+<script src="chapters/ch2/data.js"></script>
+<script src="chapters/ch2/chapter.js"></script>
+<script>G.boot();</script>
+</body>
+</html>

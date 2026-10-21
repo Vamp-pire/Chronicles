@@ -1,0 +1,31 @@
+/* 제1장 · 인도 궁정 (차투랑가) 꾸밈. 모두 body[data-ch="ch1"] 아래에서만 적용 */
+/* museum */
+body[data-ch="ch1"] .beam{animation:ch1-beam 6s ease-in-out infinite}
+@keyframes ch1-beam{0%,100%{opacity:0}50%{opacity:.1}}
+body[data-ch="ch1"] .mote{animation:ch1-mote linear infinite}
+@keyframes ch1-mote{from{transform:translate(0,0);opacity:0}15%{opacity:.8}to{transform:translate(var(--dx),-140px);opacity:0}}
+body[data-ch="ch1"] .elephant-glow{transform-box:fill-box;transform-origin:50% 50%;animation:ch1-glow 3.2s ease-in-out infinite}
+@keyframes ch1-glow{0%,100%{opacity:.25;transform:scale(.9)}50%{opacity:.7;transform:scale(1.05)}}
+body[data-ch="ch1"] .awake .elephant-glow{animation:ch1-awake 1s ease-in-out infinite}
+@keyframes ch1-awake{0%,100%{opacity:.8;transform:scale(1.2)}50%{opacity:1;transform:scale(2.4)}}
+/* court */
+body[data-ch="ch1"] .smoke{animation:ch1-smoke 7s ease-out infinite}
+body[data-ch="ch1"] .smoke:nth-of-type(2){animation-delay:-2.3s}
+body[data-ch="ch1"] .smoke:nth-of-type(3){animation-delay:-4.6s}
+@keyframes ch1-smoke{from{transform:translateY(0) scaleX(1);opacity:0}20%{opacity:.5}to{transform:translateY(-120px) scaleX(1.8);opacity:0}}
+/* caravan (1장 마지막 장면) */
+body[data-ch="ch1"] .dune-far{animation:ch1-drift 60s linear infinite}
+body[data-ch="ch1"] .dune-near{animation:ch1-drift 26s linear infinite}
+@keyframes ch1-drift{from{transform:translateX(0)}to{transform:translateX(-800px)}}
+body[data-ch="ch1"] .camel{animation:ch1-walk 1.1s ease-in-out infinite}
+body[data-ch="ch1"] .camel:nth-of-type(2){animation-delay:-.4s}
+body[data-ch="ch1"] .camel:nth-of-type(3){animation-delay:-.8s}
+@keyframes ch1-walk{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+body[data-ch="ch1"] .sand{animation:ch1-sand 3s linear infinite}
+@keyframes ch1-sand{from{transform:translateX(0);opacity:0}20%{opacity:.6}to{transform:translateX(-260px);opacity:0}}
+/* 쌀알 세기 */
+.rice{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px;max-width:360px}
+.rice button{aspect-ratio:1;border:1px solid var(--line);background:var(--panel-2);border-radius:3px;font-size:.6rem;padding:0;color:var(--accent-ink);font-variant-numeric:tabular-nums;overflow:hidden;position:relative}
+.rice button.on{background:var(--sand);border-color:var(--sand);animation:ch1-pop .3s ease}
+@keyframes ch1-pop{50%{transform:scale(1.18)}}
+.big{font-variant-numeric:tabular-nums;font-family:var(--display);font-size:1.25rem;color:var(--accent);word-break:break-all}
